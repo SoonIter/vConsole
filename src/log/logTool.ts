@@ -1,15 +1,15 @@
-import * as tool from '../lib/tool';
-import type { IVConsoleLog, IVConsoleLogData } from './log.model';
+import * as tool from "../lib/tool";
+import type { IVConsoleLog, IVConsoleLogData } from "./log.model";
 
 const getPreviewText = (val: any) => {
   const json = tool.safeJSONStringify(val, { maxDepth: 0 });
   let preview = json.substring(0, 36);
   let ret = tool.getObjName(val);
   if (json.length > 36) {
-    preview += '...';
+    preview += "...";
   }
   // ret = tool.getVisibleText(tool.htmlEncode(ret + ' ' + preview));
-  ret = tool.getVisibleText(ret + ' ' + preview);
+  ret = tool.getVisibleText(ret + " " + preview);
   return ret;
 };
 
@@ -17,58 +17,62 @@ const getPreviewText = (val: any) => {
  * Get a value's text content and its type.
  */
 export const getValueTextAndType = (val: any, wrapString = true) => {
-  let valueType = 'undefined';
+  let valueType = "undefined";
   let text = val;
   if (val instanceof VConsoleUninvocatableObject) {
-    valueType = 'uninvocatable';
-    text = '(...)';
+    valueType = "uninvocatable";
+    text = "(...)";
   } else if (tool.isArray(val)) {
-    valueType = 'array';
+    valueType = "array";
     text = getPreviewText(val);
   } else if (tool.isObject(val)) {
-    valueType = 'object';
+    valueType = "object";
     text = getPreviewText(val);
   } else if (tool.isString(val)) {
-    valueType = 'string';
+    valueType = "string";
     text = tool.getVisibleText(val);
     if (wrapString) {
       text = '"' + text + '"';
     }
   } else if (tool.isNumber(val)) {
-    valueType = 'number';
+    valueType = "number";
     text = String(val);
   } else if (tool.isBigInt(val)) {
-    valueType = 'bigint';
-    text = String(val) + 'n';
+    valueType = "bigint";
+    text = String(val) + "n";
   } else if (tool.isBoolean(val)) {
-    valueType = 'boolean';
+    valueType = "boolean";
     text = String(val);
   } else if (tool.isNull(val)) {
-    valueType = 'null';
-    text = 'null';
+    valueType = "null";
+    text = "null";
   } else if (tool.isUndefined(val)) {
-    valueType = 'undefined';
-    text = 'undefined';
+    valueType = "undefined";
+    text = "undefined";
   } else if (tool.isFunction(val)) {
-    valueType = 'function';
-    text = (val.name || 'function') + '()';
+    valueType = "function";
+    text = (val.name || "function") + "()";
   } else if (tool.isSymbol(val)) {
-    valueType = 'symbol';
+    valueType = "symbol";
     text = String(val);
   }
   return { text, valueType };
-}
+};
 
-const frontIdentifierList = ['.', '[', '(', '{', '}'];
-const backIdentifierList = [']', ')', '}'];
+const frontIdentifierList = [".", "[", "(", "{", "}"];
+const backIdentifierList = ["]", ")", "}"];
 
-const _getIdentifier = (text: string, identifierList: string[], startPos = 0) => {
+const _getIdentifier = (
+  text: string,
+  identifierList: string[],
+  startPos = 0
+) => {
   // for case 'aa.bb.cc'
   const ret = {
-    text: '',        // '.'
-    pos: -1,         // 5
-    before: '',      // 'aa.bb'
-    after: '',       // 'cc'
+    text: "", // '.'
+    pos: -1, // 5
+    before: "", // 'aa.bb'
+    after: "", // 'cc'
   };
   for (let i = text.length - 1; i >= startPos; i--) {
     const idx = identifierList.indexOf(text[i]);
@@ -96,10 +100,12 @@ export const getLastIdentifier = (text: string) => {
 };
 
 export const isMatchedFilterText = (log: IVConsoleLog, filterText: string) => {
-  if (filterText === '') { return true; }
+  if (filterText === "") {
+    return true;
+  }
   for (let i = 0; i < log.data.length; i++) {
     const type = typeof log.data[i].origData;
-    if (type === 'string') {
+    if (type === "string") {
       if (log.data[i].origData.indexOf(filterText) > -1) {
         return true;
       }
@@ -108,9 +114,8 @@ export const isMatchedFilterText = (log: IVConsoleLog, filterText: string) => {
   return false;
 };
 
-
-// keywords: `%c | %s | %d | %o`, must starts or ends with a blank
-const logFormattingPattern = /(\%[csdo] )|( \%[csdo])/g;
+// keywords: `%c | %s | %d | %o`, better starts or ends with a blank
+const logFormattingPattern = /( \%[csdo])|(\%[csdo] )|(\%[csdo])/g;
 /**
  * Styling log output (`%c`), or string substitutions (`%s`, `%d`, `%o`).
  * Apply to the first log only.
@@ -124,7 +129,7 @@ export const getLogDatasWithFormatting = (origDatas: any[]) => {
 
     // use firstData as display logs
     const mainLogs = firstData.split(logFormattingPattern).filter((val) => {
-      return val !== undefined && val !== '';
+      return val !== undefined && val !== "";
     });
     // use remain logs as replace item
     const subLogs = rawDatas;
@@ -132,22 +137,22 @@ export const getLogDatasWithFormatting = (origDatas: any[]) => {
     const logDataList: IVConsoleLogData[] = [];
     let isSetOrigData = false;
     let origData: any;
-    let style = '';
+    let style = "";
     while (mainLogs.length > 0) {
       const mainText = mainLogs.shift();
-      
+
       if (/ ?\%c ?/.test(mainText)) {
         // Use subLogs[0] as CSS style.
         // If subLogs[0] is not set, use original mainText as origData.
         // If subLogs[0] is not a string, then leave style empty.
         if (subLogs.length > 0) {
           style = subLogs.shift();
-          if (typeof style !== 'string') {
-            style = '';
+          if (typeof style !== "string") {
+            style = "";
           }
         } else {
           origData = mainText;
-          style = '';
+          style = "";
           isSetOrigData = true;
         }
       } else if (/ ?\%[sd] ?/.test(mainText)) {
@@ -155,7 +160,9 @@ export const getLogDatasWithFormatting = (origDatas: any[]) => {
         // If subLogs[0] is not set, use original mainText as origData.
         // If subLogs[0] is not a string, convert it to a string.
         if (subLogs.length > 0) {
-          origData = tool.isObject(subLogs[0]) ? tool.getObjName(subLogs.shift()) : String(subLogs.shift());
+          origData = tool.isObject(subLogs[0])
+            ? tool.getObjName(subLogs.shift())
+            : String(subLogs.shift());
         } else {
           origData = mainText;
         }
@@ -179,7 +186,7 @@ export const getLogDatasWithFormatting = (origDatas: any[]) => {
         // reset
         isSetOrigData = false;
         origData = undefined;
-        style = '';
+        style = "";
       }
     }
     // If there are remaining subLogs, add them to logs.
@@ -202,10 +209,7 @@ export const getLogDatasWithFormatting = (origDatas: any[]) => {
   }
 };
 
-
 /**
  * An empty class for rendering views.
  */
-export class VConsoleUninvocatableObject {
-
-}
+export class VConsoleUninvocatableObject {}
